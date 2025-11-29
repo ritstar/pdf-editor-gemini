@@ -1,4 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PDF Editor with Image & Signature Overlay
+
+A powerful, client-side PDF editor built with Next.js that allows you to overlay images and signatures onto PDF documents.
+
+## Features
+
+### 📄 PDF Management
+- **Upload PDF**: Drag and drop or select any PDF file.
+- **Preview**: View your PDF pages directly in the browser.
+- **Download**: Generate and download the modified PDF with all overlays embedded.
+
+### 🖼️ Image Overlay
+- **Multi-Image Support**: Add multiple images to a single PDF page.
+- **Drag & Drop**: Freely move images around the page.
+- **Resize & Stretch**: 
+  - **Corner Handles**: Resize proportionally.
+  - **Side Handles**: Stretch images horizontally or vertically (unlocked aspect ratio).
+  - **Visual Feedback**: Handles appear on selection and hide on deselect.
+- **Delete**: Right-click context menu to remove images.
+
+### ✍️ Signature Support
+- **Smart Upload**: dedicated "Add Signature" button.
+- **Auto-Background Removal**: Automatically detects and removes white backgrounds from uploaded signature images using client-side processing (Canvas API).
+- **Privacy Focused**: All processing happens in your browser; no data is sent to a server.
+
+## Tech Stack
+- **Framework**: Next.js 14 (App Router)
+- **PDF Processing**: `pdf-lib`
+- **PDF Rendering**: `react-pdf`
+- **Interactions**: `react-draggable`, `re-resizable`
+- **Styling**: Vanilla CSS (Responsive & Modern)
+- **Icons**: `lucide-react`
 
 ## Getting Started
 
@@ -8,29 +39,23 @@ First, run the development server:
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Upload a PDF**: Click the upload area to select your document.
+2. **Add Content**:
+   - Click "Add Image" to upload standard images (PNG, JPG).
+   - Click "Add Signature" to upload a signature photo (white background will be removed).
+3. **Edit**:
+   - Click an image to select it.
+   - Drag to move.
+   - Use blue handles to resize or stretch.
+   - Right-click to delete.
+4. **Download**: Click "Download PDF" to save your changes.
 
-## Learn More
+## License
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT

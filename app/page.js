@@ -5,7 +5,9 @@ import { useState } from 'react';
 import { Download } from 'lucide-react';
 import PdfUploader from './components/PdfUploader';
 import ImageUploader from './components/ImageUploader';
+import SignatureUploader from './components/SignatureUploader';
 import { generatePdf } from './utils/pdfGenerator';
+import { removeWhiteBackground } from './utils/imageProcessing';
 
 const PdfEditor = dynamic(() => import('./components/PdfEditor'), { ssr: false });
 
@@ -25,6 +27,23 @@ export default function Home() {
     setImages([...images, newImage]);
   };
 
+  const handleSignatureUpload = async (file) => {
+    try {
+      const processedFile = await removeWhiteBackground(file);
+
+      const newImage = {
+        id: Date.now() + Math.random(),
+        file: processedFile,
+        position: { x: 50, y: 50 }, // Default position slightly offset
+        dimensions: null
+      };
+      setImages(prev => [...prev, newImage]);
+    } catch (error) {
+      console.error('Error processing signature:', error);
+      alert('Failed to process signature. Please try another image.');
+    }
+  };
+
   const handlePositionChange = (imageId, position) => {
     setImages(images.map(img =>
       img.id === imageId ? { ...img, position } : img
@@ -35,6 +54,30 @@ export default function Home() {
     setImages(images.map(img =>
       img.id === imageId ? { ...img, dimensions } : img
     ));
+  };
+
+  const handleImageResize = (imageId, newSize, positionDelta = { x: 0, y: 0 }) => {
+    setImages(images.map(img => {
+      if (img.id === imageId) {
+        return {
+          ...img,
+          dimensions: {
+            ...img.dimensions,
+            width: newSize.width,
+            height: newSize.height
+          },
+          position: {
+            x: img.position.x + positionDelta.x,
+            y: img.position.y + positionDelta.y
+          }
+        };
+      }
+      return img;
+    }));
+  };
+
+  const handleImageDelete = (imageId) => {
+    setImages(images.filter(img => img.id !== imageId));
   };
 
   const handleDownload = async () => {
@@ -102,8 +145,7 @@ export default function Home() {
                 <button
                   onClick={() => {
                     setPdfFile(null);
-                    setImageFile(null);
-                    setImageDimensions(null);
+                    setImages([]);
                   }}
                   className="back-btn"
                 >
@@ -115,11 +157,10 @@ export default function Home() {
               </div>
 
               <div className="toolbar-right">
-                {!imageFile && (
-                  <ImageUploader onUpload={setImageFile} />
-                )}
+                <ImageUploader onUpload={handleImageUpload} />
+                <SignatureUploader onUpload={handleSignatureUpload} />
 
-                {imageFile && (
+                {images.length > 0 && (
                   <button
                     onClick={handleDownload}
                     disabled={isGenerating}
@@ -134,10 +175,12 @@ export default function Home() {
 
             <PdfEditor
               pdfFile={pdfFile}
-              imageFile={imageFile}
-              onPositionChange={setPosition}
+              images={images}
+              onPositionChange={handlePositionChange}
               onScaleChange={setScale}
-              onImageLoad={setImageDimensions}
+              onImageLoad={handleImageLoad}
+              onImageResize={handleImageResize}
+              onImageDelete={handleImageDelete}
             />
           </div>
         )}
