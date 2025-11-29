@@ -1,66 +1,147 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+
+import dynamic from 'next/dynamic';
+import { useState } from 'react';
+import { Download } from 'lucide-react';
+import PdfUploader from './components/PdfUploader';
+import ImageUploader from './components/ImageUploader';
+import { generatePdf } from './utils/pdfGenerator';
+
+const PdfEditor = dynamic(() => import('./components/PdfEditor'), { ssr: false });
 
 export default function Home() {
+  const [pdfFile, setPdfFile] = useState(null);
+  const [images, setImages] = useState([]);
+  const [scale, setScale] = useState(1);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleImageUpload = (file) => {
+    const newImage = {
+      id: Date.now() + Math.random(), // Unique ID
+      file: file,
+      position: { x: 0, y: 0 },
+      dimensions: null
+    };
+    setImages([...images, newImage]);
+  };
+
+  const handlePositionChange = (imageId, position) => {
+    setImages(images.map(img =>
+      img.id === imageId ? { ...img, position } : img
+    ));
+  };
+
+  const handleImageLoad = (imageId, dimensions) => {
+    setImages(images.map(img =>
+      img.id === imageId ? { ...img, dimensions } : img
+    ));
+  };
+
+  const handleDownload = async () => {
+    if (!pdfFile || images.length === 0) return;
+
+    // Filter out images that don't have dimensions set yet
+    const validImages = images.filter(img => img.dimensions);
+    if (validImages.length === 0) {
+      alert('Please wait for images to load before downloading.');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const pdfBytes = await pdfFile.arrayBuffer();
+
+      // Convert all images to array buffers
+      const imagesData = await Promise.all(
+        validImages.map(async (img) => ({
+          bytes: await img.file.arrayBuffer(),
+          position: img.position,
+          dimensions: img.dimensions
+        }))
+      );
+
+      const modifiedPdfBytes = await generatePdf({
+        pdfBytes,
+        images: imagesData,
+        scale
+      });
+
+      const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'modified_document.pdf';
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.js file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="main-container">
+      <div className="content-wrapper">
+        <header className="header">
+          <h1 className="title">
+            PDF Editor
+          </h1>
+          <p className="subtitle">
+            Upload a PDF, add an image overlay, and download the result.
           </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+        </header>
+
+        {!pdfFile ? (
+          <PdfUploader onUpload={setPdfFile} />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div className="toolbar">
+              <div className="toolbar-left">
+                <button
+                  onClick={() => {
+                    setPdfFile(null);
+                    setImageFile(null);
+                    setImageDimensions(null);
+                  }}
+                  className="back-btn"
+                >
+                  ← Upload different PDF
+                </button>
+                <span className="file-name">
+                  {pdfFile.name}
+                </span>
+              </div>
+
+              <div className="toolbar-right">
+                {!imageFile && (
+                  <ImageUploader onUpload={setImageFile} />
+                )}
+
+                {imageFile && (
+                  <button
+                    onClick={handleDownload}
+                    disabled={isGenerating}
+                    className="btn btn-primary"
+                  >
+                    <Download size={18} />
+                    {isGenerating ? 'Generating...' : 'Download PDF'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <PdfEditor
+              pdfFile={pdfFile}
+              imageFile={imageFile}
+              onPositionChange={setPosition}
+              onScaleChange={setScale}
+              onImageLoad={setImageDimensions}
             />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
